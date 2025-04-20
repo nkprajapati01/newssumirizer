@@ -1,27 +1,16 @@
 [server]
-# Set this to true if deploying in a headless environment (like Streamlit Cloud or Docker)
-headless = true
+headless = true # Keep true for deployment
 runOnSave = true
 enableCORS = false
-enableXsrfProtection = true
+enableXsrfProtection = true # Good default
 
 [theme]
-base = "light"          # or "dark"
+base = "light"
 primaryColor = "#0066cc"
 backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f0f2f6"
 textColor = "#000000"
-font = "sans serif"     # Options: "sans serif", "serif", "monospace"
+font = "sans serif"
 
 [client]
-toolbarMode = "minimal" # Options: "auto", "minimal", "developer"
-
-[ui]
-hideTopBar = false
-hideSidebarNav = false
-
-[layout]
-# "wide" gives a full-width layout which is better for dense output
-initial_sidebar_state = "expanded"  # Options: "expanded", "collapsed", "auto"
-page_title = "AI News + Research Summarizer"
-page_icon = "🧠"
+toolbarMode = "minimal"
