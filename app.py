@@ -1,11 +1,11 @@
 import streamlit as st
 import requests
 import xml.etree.ElementTree as ET
-import google.generativeai as genai
 import json
 import textwrap
 import os
 from datetime import datetime
+from transformers import pipeline
 
 # Constants
 SERPER_RESULT_COUNT = 5
@@ -15,15 +15,9 @@ MAX_SUMMARY_TOKENS = 1000
 # Load API keys
 def get_api_keys():
     serper_key = st.secrets["SERPER_API_KEY"] if "SERPER_API_KEY" in st.secrets else os.environ.get("SERPER_API_KEY")
-    google_ai_key = st.secrets["GOOGLE_AI_API_KEY"] if "GOOGLE_AI_API_KEY" in st.secrets else os.environ.get("GOOGLE_AI_API_KEY")
-
     if not serper_key:
         st.error("Serper API Key not found.")
-    if not google_ai_key:
-        st.error("Google AI API Key not found.")
-    if not serper_key or not google_ai_key:
-        return None, None
-    return serper_key, google_ai_key
+    return serper_key
 
 # Search using Serper API
 def search_serper(query, api_key, num_results=SERPER_RESULT_COUNT):
@@ -81,8 +75,8 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
         st.error(f"arXiv API Error: {e}")
         return []
 
-# Summarize everything using Google Gemini
-def summarize_with_ai(topic, serper_results, arxiv_results, api_key):
+# Summarize everything using Hugging Face model
+def summarize_with_ai(topic, serper_results, arxiv_results):
     st.info("Generating summary...")
 
     context = f"Topic: {topic}\n\n--- Recent News ---\n"
@@ -103,26 +97,13 @@ def summarize_with_ai(topic, serper_results, arxiv_results, api_key):
                 context += text
                 token_count += len(text.split())
 
+    # Use Hugging Face summarization pipeline
+    summarizer = pipeline("summarization")
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-pro")
-        prompt = f"""
-Based only on the context below, synthesize key findings and recent developments about "{topic}". Use 3–6 sentences. Do not add information beyond the context.
-
-Context:
-{context}
-
-Summary:
-"""
-        response = model.generate_content(prompt)
-        if hasattr(response, "text") and response.text:
-            return response.text
-        elif response.parts:
-            return response.parts[0].text
-        else:
-            return "AI did not return content."
+        summary = summarizer(context, max_length=250, min_length=50, do_sample=False)
+        return summary[0]['summary_text']
     except Exception as e:
-        st.error(f"Google AI Error: {e}")
+        st.error(f"Hugging Face API Error: {e}")
         return "Failed to generate summary."
 
 # Show the results
@@ -143,21 +124,21 @@ def display_results(topic, summary, serper_data, arxiv_data):
 # Main Streamlit app
 def main():
     st.title("🔍 Live News & Research Summarizer")
-    serper_api_key, google_ai_api_key = get_api_keys()
+    serper_api_key = get_api_keys()
 
     with st.form("search_form"):
         user_topic = st.text_input("Enter a topic:")
         submitted = st.form_submit_button("Search and Summarize")
 
     if submitted:
-        if not serper_api_key or not google_ai_api_key:
+        if not serper_api_key:
             st.error("API keys are missing or invalid.")
             return
 
         with st.spinner("Searching and summarizing..."):
             serper_results = search_serper(user_topic, serper_api_key)
             arxiv_results = search_arxiv(user_topic)
-            summary = summarize_with_ai(user_topic, serper_results, arxiv_results, google_ai_api_key)
+            summary = summarize_with_ai(user_topic, serper_results, arxiv_results)
             display_results(user_topic, summary, serper_results, arxiv_results)
 
 if __name__ == "__main__":
