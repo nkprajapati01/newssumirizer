@@ -1,11 +1,11 @@
 import streamlit as st
 import requests
 import xml.etree.ElementTree as ET
+from transformers import pipeline
 import json
 import textwrap
 import os
 from datetime import datetime
-from transformers import pipeline
 
 # Constants
 SERPER_RESULT_COUNT = 5
@@ -15,6 +15,7 @@ MAX_SUMMARY_TOKENS = 1000
 # Load API keys
 def get_api_keys():
     serper_key = st.secrets["SERPER_API_KEY"] if "SERPER_API_KEY" in st.secrets else os.environ.get("SERPER_API_KEY")
+
     if not serper_key:
         st.error("Serper API Key not found.")
     return serper_key
@@ -76,7 +77,7 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
         return []
 
 # Summarize everything using Hugging Face model
-def summarize_with_ai(topic, serper_results, arxiv_results):
+def summarize_with_huggingface(topic, serper_results, arxiv_results):
     st.info("Generating summary...")
 
     context = f"Topic: {topic}\n\n--- Recent News ---\n"
@@ -97,13 +98,17 @@ def summarize_with_ai(topic, serper_results, arxiv_results):
                 context += text
                 token_count += len(text.split())
 
-    # Use Hugging Face summarization pipeline
+    # Use Hugging Face summarization model
     summarizer = pipeline("summarization")
+
     try:
-        summary = summarizer(context, max_length=250, min_length=50, do_sample=False)
-        return summary[0]['summary_text']
+        summary = summarizer(context, max_length=200, min_length=50, do_sample=False)
+        if summary:
+            return summary[0]['summary_text']
+        else:
+            return "AI did not return content."
     except Exception as e:
-        st.error(f"Hugging Face API Error: {e}")
+        st.error(f"Hugging Face Summarization Error: {e}")
         return "Failed to generate summary."
 
 # Show the results
@@ -132,13 +137,13 @@ def main():
 
     if submitted:
         if not serper_api_key:
-            st.error("API keys are missing or invalid.")
+            st.error("API key is missing or invalid.")
             return
 
         with st.spinner("Searching and summarizing..."):
             serper_results = search_serper(user_topic, serper_api_key)
             arxiv_results = search_arxiv(user_topic)
-            summary = summarize_with_ai(user_topic, serper_results, arxiv_results)
+            summary = summarize_with_huggingface(user_topic, serper_results, arxiv_results)
             display_results(user_topic, summary, serper_results, arxiv_results)
 
 if __name__ == "__main__":
