@@ -1,7 +1,7 @@
 import streamlit as st
 from transformers import pipeline
 import arxiv
-from serpapi import GoogleSearch  # Corrected import
+from serpapi.google_search import GoogleSearch  # CORRECTED IMPORT!
 
 # Initialize Hugging Face summarizer
 try:
