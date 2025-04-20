@@ -1,25 +1,19 @@
 import streamlit as st
 import requests
-import xml.etree.ElementTree as ET
-import os
-from datetime import datetime
-from transformers import pipeline
-import textwrap
 import json
+from transformers import pipeline
+import torch
 
 # Constants
 SERPER_RESULT_COUNT = 5
 ARXIV_RESULT_COUNT = 3
-MAX_SUMMARY_TOKENS = 1000
+MAX_SUMMARY_TOKENS = 1024  # Adjusted to the max token limit of models
 
 # Load API keys
 def get_api_keys():
-    serper_key = st.secrets["SERPER_API_KEY"] if "SERPER_API_KEY" in st.secrets else os.environ.get("SERPER_API_KEY")
-
+    serper_key = st.secrets["SERPER_API_KEY"] if "SERPER_API_KEY" in st.secrets else None
     if not serper_key:
         st.error("Serper API Key not found.")
-    if not serper_key:
-        return None
     return serper_key
 
 # Search using Serper API
@@ -38,7 +32,6 @@ def search_serper(query, api_key, num_results=SERPER_RESULT_COUNT):
             'link': item.get('link', '#'),
             'snippet': item.get('snippet', 'N/A'),
             'source': item.get('source', item.get('displayLink', 'N/A')),
-            'position': item.get('position')
         } for item in results.get('organic', [])]
         return organic_results
     except Exception as e:
@@ -58,7 +51,6 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
         root = ET.fromstring(response.content)
         namespace = {'atom': 'http://www.w3.org/2005/Atom'}
         entries = []
-
         for entry in root.findall('atom:entry', namespace):
             arxiv_id = entry.find('atom:id', namespace).text.split('/abs/')[-1]
             title = entry.find('atom:title', namespace).text.strip().replace('\n', ' ')
@@ -78,11 +70,10 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
         st.error(f"arXiv API Error: {e}")
         return []
 
-# Summarize everything using Hugging Face model
+# Summarize using Hugging Face model
 def summarize_with_ai(topic, serper_results, arxiv_results):
     st.info("Generating summary...")
 
-    # Context for summarization
     context = f"Topic: {topic}\n\n--- Recent News ---\n"
     token_count = len(context.split())
 
@@ -101,20 +92,17 @@ def summarize_with_ai(topic, serper_results, arxiv_results):
                 context += text
                 token_count += len(text.split())
 
-    # Ensure the context is within the token limit of the model (e.g., 1024 tokens)
-    max_token_limit = 1024  # You can adjust this value based on your model's limit
-    context_tokens = context.split()
+    # Use Hugging Face's transformers pipeline for summarization
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    max_chunk_size = 1024  # Maximum token size for BART
 
-    if len(context_tokens) > max_token_limit:
-        context = " ".join(context_tokens[:max_token_limit])
-
-    # Use Hugging Face transformer model for summarization
-    summarizer = pipeline("summarization")
-    try:
+    # If the context is too long, split into smaller chunks
+    if len(context.split()) > max_chunk_size:
+        chunks = [context[i:i + max_chunk_size] for i in range(0, len(context), max_chunk_size)]
+        summaries = [summarizer(chunk, max_length=500, min_length=50, do_sample=False) for chunk in chunks]
+        summary = " ".join([item[0]['summary_text'] for item in summaries])
+    else:
         summary = summarizer(context, max_length=500, min_length=50, do_sample=False)[0]['summary_text']
-    except Exception as e:
-        st.error(f"Error generating summary: {e}")
-        summary = "There was an error summarizing the content."
 
     return summary
 
@@ -122,7 +110,7 @@ def summarize_with_ai(topic, serper_results, arxiv_results):
 def display_results(topic, summary, serper_data, arxiv_data):
     st.markdown(f"## Summary for: {topic}")
     st.subheader("AI Summary")
-    st.write(textwrap.fill(summary, width=90))
+    st.write(summary)
 
     if st.checkbox("Show Raw Search Results"):
         st.subheader("Web Results")
