@@ -1,10 +1,11 @@
 import streamlit as st
 import requests
 import xml.etree.ElementTree as ET
-from transformers import pipeline
-import json
 import os
 from datetime import datetime
+from transformers import pipeline
+import textwrap
+import json
 
 # Constants
 SERPER_RESULT_COUNT = 5
@@ -17,6 +18,7 @@ def get_api_keys():
 
     if not serper_key:
         st.error("Serper API Key not found.")
+    if not serper_key:
         return None
     return serper_key
 
@@ -76,7 +78,7 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
         st.error(f"arXiv API Error: {e}")
         return []
 
-# Summarize everything using Hugging Face Model
+# Summarize everything using Hugging Face model
 def summarize_with_ai(topic, serper_results, arxiv_results):
     st.info("Generating summary...")
 
@@ -99,16 +101,28 @@ def summarize_with_ai(topic, serper_results, arxiv_results):
                 context += text
                 token_count += len(text.split())
 
+    # Ensure the context is within the token limit of the model (e.g., 1024 tokens)
+    max_token_limit = 1024  # You can adjust this value based on your model's limit
+    context_tokens = context.split()
+
+    if len(context_tokens) > max_token_limit:
+        context = " ".join(context_tokens[:max_token_limit])
+
     # Use Hugging Face transformer model for summarization
     summarizer = pipeline("summarization")
-    summary = summarizer(context, max_length=500, min_length=50, do_sample=False)[0]['summary_text']
+    try:
+        summary = summarizer(context, max_length=500, min_length=50, do_sample=False)[0]['summary_text']
+    except Exception as e:
+        st.error(f"Error generating summary: {e}")
+        summary = "There was an error summarizing the content."
+
     return summary
 
 # Show the results
 def display_results(topic, summary, serper_data, arxiv_data):
     st.markdown(f"## Summary for: {topic}")
     st.subheader("AI Summary")
-    st.write(summary)
+    st.write(textwrap.fill(summary, width=90))
 
     if st.checkbox("Show Raw Search Results"):
         st.subheader("Web Results")
@@ -130,7 +144,7 @@ def main():
 
     if submitted:
         if not serper_api_key:
-            st.error("API key is missing or invalid.")
+            st.error("API keys are missing or invalid.")
             return
 
         with st.spinner("Searching and summarizing..."):
