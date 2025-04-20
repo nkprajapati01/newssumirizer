@@ -105,7 +105,7 @@ def summarize_with_ai(topic, serper_results, arxiv_results, api_key):
 
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel("gemini-pro")
         prompt = f"""
 Based only on the context below, synthesize key findings and recent developments about "{topic}". Use 3–6 sentences. Do not add information beyond the context.
 
