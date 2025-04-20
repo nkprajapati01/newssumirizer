@@ -2,5 +2,4 @@ streamlit
 requests
 transformers
 torch
-xml.etree.ElementTree
 textwrap
