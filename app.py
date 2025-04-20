@@ -1,7 +1,8 @@
 import streamlit as st
 from transformers import pipeline
 import arxiv
-from serpapi import GoogleSearch
+import requests
+import json
 
 # Initialize Hugging Face summarizer
 @st.cache_resource(show_spinner=False)
@@ -39,21 +40,29 @@ def fetch_arxiv_data(topic):
         st.error(f"Error fetching data from Arxiv: {e}")
         return ""
 
-# Function to fetch data from SerpAPI
+# Function to fetch data from Serper API
 def fetch_serper_data(topic):
-    serpapi_key = st.secrets.get("SERPAPI_API_KEY")
-    if not serpapi_key:
-        st.warning("Please add your SerpAPI API key to Streamlit secrets.")
+    serper_api_key = st.secrets.get("SERPER_API_KEY")
+    if not serper_api_key:
+        st.warning("Please add your Serper API key to Streamlit secrets.")
         return ""
 
+    url = "https://google.serper.dev/search"
+    payload = json.dumps({"q": topic})
+    headers = {
+        'X-API-KEY': serper_api_key,
+        'Content-Type': 'application/json'
+    }
+
     try:
-        client = GoogleSearch({"q": topic, "api_key": serpapi_key})
-        results = client.get_dict()
-        organic_results = results.get("organic_results", [])
+        response = requests.post(url, headers=headers, data=payload, timeout=15)
+        response.raise_for_status()
+        results = response.json()
+        organic_results = results.get("organic", [])
         snippets = [item.get("snippet", "") for item in organic_results if item.get("snippet")]
         return " ".join(snippets)
     except Exception as e:
-        st.error(f"Error fetching data from SerpAPI: {e}")
+        st.error(f"Error fetching data from Serper API: {e}")
         return ""
 
 # Streamlit UI
