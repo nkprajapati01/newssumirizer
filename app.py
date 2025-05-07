@@ -137,7 +137,7 @@ def main():
                 st.write(summary)
             else:
                 st.info("Summary generation failed. Please try a different topic or check for issues.")
-        print("🌟 **Made by Neeraj Kumar Prajapati** ! 🌟")
+    print("🌟 **Made by Neeraj Kumar Prajapati** ! 🌟")
 
 if __name__ == "__main__":
     main()
