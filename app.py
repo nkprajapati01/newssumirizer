@@ -5,8 +5,8 @@ import xml.etree.ElementTree as ET
 import json
 
 # Constants
-ARXIV_RESULT_COUNT = 3
-SERPER_RESULT_COUNT = 5
+ARXIV_RESULT_COUNT = 5
+SERPER_RESULT_COUNT = 6
 
 # Initialize Hugging Face summarizer
 @st.cache_resource(show_spinner=False)
@@ -141,4 +141,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-st.write("🌟 **Made by Neeraj Kumar Prajapati** ! 🌟")
+print("🌟 **Made by Neeraj Kumar Prajapati** ! 🌟")
