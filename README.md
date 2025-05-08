@@ -49,10 +49,10 @@ streamlit run app.py
 * Made with ❤️ for curious minds and research enthusiasts.
 
 🧠 **Future Ideas**
-* **Add support for more APIs like Semantic Scholar or PubMed
-* **Enable voice input for topic search
-* **Add caching and performance optimizations
-* **Deploy to Hugging Face Spaces or Streamlit Cloud
+* Add support for more APIs like Semantic Scholar or PubMed
+* Enable voice input for topic search
+* Add caching and performance optimizations
+* Deploy to Hugging Face Spaces or Streamlit Cloud
 
 ⭐️ **Show Your Support**
 * If you found this project useful, please give it a ⭐️ and consider sharing it!
