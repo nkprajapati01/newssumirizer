@@ -31,3 +31,28 @@ cd ai-news-research-summarizer
 
 # Install dependencies
 pip install -r requirements.txt
+```
+🔐 **Setup Secrets**
+
+Create a `.streamlit/secrets.toml` file with the following content:
+
+```bash
+# .streamlit/secrets.toml
+SERPER_API_KEY = "your-serper-api-key-here"
+```
+🚦 Run the App
+```bash
+streamlit run app.py
+```
+👨‍💻 **Author**
+* Neeraj Kumar Prajapati
+* Made with ❤️ for curious minds and research enthusiasts.
+
+🧠 **Future Ideas**
+* **Add support for more APIs like Semantic Scholar or PubMed
+* **Enable voice input for topic search
+* **Add caching and performance optimizations
+* **Deploy to Hugging Face Spaces or Streamlit Cloud
+
+⭐️ **Show Your Support**
+* If you found this project useful, please give it a ⭐️ and consider sharing it!
