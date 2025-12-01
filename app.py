@@ -8,29 +8,43 @@ import json
 ARXIV_RESULT_COUNT = 5
 SERPER_RESULT_COUNT = 6
 
-# Initialize Hugging Face summarizer
+# Available summarization models to pick from
+MODEL_OPTIONS = [
+    "facebook/bart-large-cnn",
+    # "t5-base",
+    # "t5-small",
+    # "google/pegasus-xsum",
+    # "sshleifer/distilbart-cnn-12-6",
+    # "declare-lab/flan-t5-base"
+]
+
+# Initialize Hugging Face summarizer (cached per model_name)
 @st.cache_resource(show_spinner=False)
-def load_summarizer():
+def load_summarizer(model_name: str):
     try:
-        return pipeline("summarization", model="facebook/bart-large-cnn")  # Using an optimal open-source model
+        # If you have a GPU available and want to use it, set device=0.
+        # For CPU usage, pipeline will run on CPU by default.
+        # To automatic GPU detection, you can uncomment and use torch if installed.
+        # import torch
+        # device = 0 if torch.cuda.is_available() else -1
+        # return pipeline("summarization", model=model_name, device=device)
+        return pipeline("summarization", model=model_name)
     except Exception as e:
-        st.error(f"Error initializing summarization pipeline: {e}")
+        st.error(f"Error initializing summarization pipeline for {model_name}: {e}")
         return None
 
-summarizer = load_summarizer()
-
-# Function to summarize text
-def summarize_text(text):
-    if summarizer:
-        try:
-            if len(text) > 1024:  # Truncate long input
-                text = text[:1024]
-            summary = summarizer(text, max_length=150, min_length=30, do_sample=False)
-            return summary[0]['summary_text']
-        except Exception as e:
-            st.error(f"Error during summarization: {e}")
-            return ""
-    return "Summarization pipeline not initialized."
+# Function to summarize text (accepts the pipeline instance)
+def summarize_text(text, summarizer):
+    if not summarizer:
+        return "Summarization pipeline not initialized."
+    try:
+        if len(text) > 1024:  # Truncate long input; adjust for your chosen model's limits
+            text = text[:1024]
+        summary = summarizer(text, max_length=150, min_length=30, do_sample=False)
+        return summary[0]['summary_text']
+    except Exception as e:
+        st.error(f"Error during summarization: {e}")
+        return ""
 
 # Function to fetch data from Serper API
 def fetch_serper_data(topic):
@@ -101,6 +115,12 @@ def search_arxiv(query, max_results=ARXIV_RESULT_COUNT):
 def main():
     st.title("🧠 AI-powered News & Research Summarizer")
 
+    # Let user choose the model
+    selected_model = st.selectbox("Choose summarization model:", MODEL_OPTIONS, index=MODEL_OPTIONS.index("facebook/bart-large-cnn"))
+
+    # Load summarizer for selected model (cached by model_name)
+    summarizer = load_summarizer(selected_model)
+
     user_topic = st.text_input("🔍 Enter a topic to summarize:")
 
     if user_topic:
@@ -130,7 +150,7 @@ def main():
             # Combine all results for summarization
             combined_text = " ".join([result['snippet'] for result in serper_results]) + " " + \
                             " ".join([paper['summary'] for paper in arxiv_results])
-            summary = summarize_text(combined_text)
+            summary = summarize_text(combined_text, summarizer)
 
             if summary:
                 st.subheader("📝 Summary")
@@ -141,5 +161,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
