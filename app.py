@@ -11,11 +11,11 @@ SERPER_RESULT_COUNT = 6
 # Available summarization models to pick from
 MODEL_OPTIONS = [
     "facebook/bart-large-cnn",
-    # "t5-base",
-    # "t5-small",
-    # "google/pegasus-xsum",
-    # "sshleifer/distilbart-cnn-12-6",
-    # "declare-lab/flan-t5-base"
+    "t5-base",
+    "t5-small",
+    "google/pegasus-xsum",
+    "sshleifer/distilbart-cnn-12-6",
+    "declare-lab/flan-t5-base"
 ]
 
 # Initialize Hugging Face summarizer (cached per model_name)
